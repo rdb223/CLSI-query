@@ -137,4 +137,4 @@ if closest_match_organism:
         for item in breakpoint:
             st.write(f"{item[0]}: {item[1]}")
     else:
-        st.write(f"The susceptibility breakpoint for {closest_match_organism} is: {breakpoint}")
+        st.write(f"The susceptibility breakpoint for {closest_match_organism} and {closest_match_antimicrobial} is: {breakpoint}")
