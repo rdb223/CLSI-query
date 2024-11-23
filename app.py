@@ -1,10 +1,27 @@
 import sqlite3
 import streamlit as st
+from fuzzywuzzy import process  # Import for fuzzy matching
 
 # Database connection function
 def get_db_connection():
     conn = sqlite3.connect('CLSI_breakpoints.db')  # Make sure this matches your database name
     return conn
+
+# Function to get possible organism names from the database
+def get_organism_names():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    query = "SELECT DISTINCT organism FROM breakpoints"
+    cursor.execute(query)
+    organisms = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return organisms
+
+# Function to get the closest matching organism
+def get_closest_match(organism, possible_organisms):
+    # Use fuzzywuzzy to find the closest match
+    match, score = process.extractOne(organism, possible_organisms)
+    return match if score > 70 else None  # Threshold of 70 to consider it a close match
 
 # Function to get breakpoint from the database
 def get_breakpoint(organism, antimicrobial):
@@ -14,7 +31,7 @@ def get_breakpoint(organism, antimicrobial):
     # Convert inputs to lowercase and replace slashes/spaces with hyphens for standardized search
     organism = organism.lower().strip()
     antimicrobial = antimicrobial.lower().strip().replace('/', '-').replace(' ', '-') if antimicrobial else None
-    
+
     # Query to get the breakpoint (case-insensitive)
     if antimicrobial:
         query = "SELECT breakpoint FROM breakpoints WHERE LOWER(organism) = ? AND LOWER(antimicrobial) = ?"
@@ -25,7 +42,7 @@ def get_breakpoint(organism, antimicrobial):
         result = cursor.fetchall()
         conn.close()
         if result:
-            return '\n'.join([f"{row[0]}: {row[1]}" for row in result])
+            return '<br>'.join([f"<span style='color:red;'>{row[0]}: {row[1]}</span>" for row in result])
         else:
             return 'No data found for the given organism.'
     
@@ -47,7 +64,18 @@ antimicrobial = st.text_input("Enter Antimicrobial (leave blank for all)", place
 # Button to get the breakpoint
 if st.button("Get Breakpoint"):
     if organism:
-        breakpoint = get_breakpoint(organism, antimicrobial)
+        # Get possible organism names from the database
+        possible_organisms = get_organism_names()
+        
+        # Find the closest match to the user-entered organism
+        closest_match = get_closest_match(organism, possible_organisms)
+        
+        if closest_match:
+            st.write(f"Did you mean: {closest_match}?")
+            breakpoint = get_breakpoint(closest_match, antimicrobial)
+        else:
+            breakpoint = "No close match found for the entered organism."
+        
         st.write(f"The susceptibility breakpoint for {antimicrobial} for {organism} is: {breakpoint}")
     else:
         st.write("Please enter an organism.")
