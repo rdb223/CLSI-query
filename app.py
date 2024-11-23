@@ -11,15 +11,25 @@ def get_breakpoint(organism, antimicrobial):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Convert inputs to lowercase and replace slashes with hyphens for standardized search
-    organism = organism.strip().lower()
-    antimicrobial = antimicrobial.strip().lower().replace('/', '-').replace(' ', '-')
+    # Convert inputs to lowercase and replace slashes/spaces with hyphens for standardized search
+    organism = organism.lower().strip()
+    antimicrobial = antimicrobial.lower().strip().replace('/', '-').replace(' ', '-') if antimicrobial else None
     
-    # Query to get the breakpoint (case-insensitive, trim spaces in the database too)
-    query = "SELECT breakpoint FROM breakpoints WHERE LOWER(TRIM(organism)) = ? AND LOWER(TRIM(antimicrobial)) = ?"
-    cursor.execute(query, (organism, antimicrobial))
+    # Query to get the breakpoint (case-insensitive)
+    if antimicrobial:
+        query = "SELECT breakpoint FROM breakpoints WHERE LOWER(organism) = ? AND LOWER(antimicrobial) = ?"
+        cursor.execute(query, (organism, antimicrobial))
+    else:
+        query = "SELECT antimicrobial, breakpoint FROM breakpoints WHERE LOWER(organism) = ?"
+        cursor.execute(query, (organism,))
+        result = cursor.fetchall()
+        conn.close()
+        if result:
+            return '\n'.join([f"{row[0]}: {row[1]}" for row in result])
+        else:
+            return 'No data found for the given organism.'
+    
     result = cursor.fetchone()
-    
     conn.close()
     
     if result:
@@ -32,12 +42,12 @@ st.title("CLSI Breakpoint Finder")
 
 # Inputs for organism and antimicrobial
 organism = st.text_input("Enter Organism", placeholder="e.g. E. coli")
-antimicrobial = st.text_input("Enter Antimicrobial", placeholder="e.g. Cefepime")
+antimicrobial = st.text_input("Enter Antimicrobial (leave blank for all)", placeholder="e.g. Cefepime")
 
 # Button to get the breakpoint
 if st.button("Get Breakpoint"):
-    if organism and antimicrobial:
+    if organism:
         breakpoint = get_breakpoint(organism, antimicrobial)
         st.write(f"The susceptibility breakpoint for {antimicrobial} for {organism} is: {breakpoint}")
     else:
-        st.write("Please enter both an organism and an antimicrobial.")
+        st.write("Please enter an organism.")
