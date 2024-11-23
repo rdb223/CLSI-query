@@ -73,15 +73,17 @@ antimicrobial = st.text_input("Enter Antimicrobial (leave blank for all)", place
 
 # Get possible organism names from the database
 possible_organisms = get_organism_names()
+possible_antimicrobials = get_antimicrobial_names()
 
 # Find the closest matches to the user-entered organism
 closest_match_organism = None
+closest_match_antimicrobial = None
+
 if organism:
     closest_matches_organisms = get_closest_match(organism, possible_organisms)
     if len(closest_matches_organisms) == 1:
         closest_match_organism = closest_matches_organisms[0]
     elif len(closest_matches_organisms) > 1:
-        st.write("Did you mean:")
         st.write("Did you mean:")
         for match in closest_matches_organisms:
             if st.button(match, key=f'organism_button_{match}'):
@@ -90,17 +92,46 @@ if organism:
         st.write("No close match found for the entered organism.")
         st.stop()
 
+elif antimicrobial:
+    # If organism is not provided but antimicrobial is, find matching organisms
+    closest_matches_antimicrobials = get_closest_match(antimicrobial, possible_antimicrobials)
+    if len(closest_matches_antimicrobials) == 1:
+        closest_match_antimicrobial = closest_matches_antimicrobials[0]
+    elif len(closest_matches_antimicrobials) > 1:
+        st.write("Did you mean:")
+        for match in closest_matches_antimicrobials:
+            if st.button(match, key=f'antimicrobial_button_{match}'):
+                closest_match_antimicrobial = match
+                # Get all organisms that have this antimicrobial
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                query = "SELECT DISTINCT organism FROM breakpoints WHERE LOWER(antimicrobial) = ?"
+                cursor.execute(query, (closest_match_antimicrobial.lower(),))
+                closest_matches_organisms = [row[0] for row in cursor.fetchall()]
+                conn.close()
+                if len(closest_matches_organisms) > 1:
+                    st.write("Did you mean one of these organisms:")
+                    for match in closest_matches_organisms:
+                        if st.button(match, key=f'organism_button_{match}'):
+                            closest_match_organism = match
+                            break
+                elif len(closest_matches_organisms) == 1:
+                    closest_match_organism = closest_matches_organisms[0]
+                else:
+                    st.write("No organisms found for the entered antimicrobial.")
+                    st.stop()
+    else:
+        st.write("No close match found for the entered antimicrobial.")
+        st.stop()
+
 # If an organism was selected, proceed to get breakpoint information
 if closest_match_organism:
     # If antimicrobial is provided, find the closest match
-    closest_match_antimicrobial = None
-    if antimicrobial:
-        possible_antimicrobials = get_antimicrobial_names()
+    if antimicrobial and not closest_match_antimicrobial:
         closest_matches_antimicrobials = get_closest_match(antimicrobial, possible_antimicrobials)
         if len(closest_matches_antimicrobials) == 1:
             closest_match_antimicrobial = closest_matches_antimicrobials[0]
         elif len(closest_matches_antimicrobials) > 1:
-            st.write("Did you mean:")
             st.write("Did you mean:")
             for match in closest_matches_antimicrobials:
                 if st.button(match, key=f'antimicrobial_button_{match}'):
