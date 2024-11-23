@@ -71,52 +71,44 @@ st.title("CLSI Breakpoint Finder")
 organism = st.text_input("Enter Organism", placeholder="e.g. E. coli")
 antimicrobial = st.text_input("Enter Antimicrobial (leave blank for all)", placeholder="e.g. Cefepime")
 
-# Button to get the breakpoint
-if st.button("Get Breakpoint"):
-    if organism:
-        # Get possible organism names from the database
-        possible_organisms = get_organism_names()
-        
-        # Find the closest matches to the user-entered organism
-        closest_matches_organisms = get_closest_match(organism, possible_organisms)
-        
-        if len(closest_matches_organisms) == 1:
-            closest_match_organism = closest_matches_organisms[0]
-        elif len(closest_matches_organisms) > 1:
-            st.write("Did you mean:")
-            closest_match_organism = st.radio("Select an organism:", closest_matches_organisms)
-            if not closest_match_organism:
-                st.write("Please select an organism.")
-                st.stop()
-        else:
-            st.write("No close match found for the entered organism.")
-            st.stop()
-        
-        # If antimicrobial is provided, find the closest match
-        closest_match_antimicrobial = None
-        if antimicrobial:
-            possible_antimicrobials = get_antimicrobial_names()
-            closest_matches_antimicrobials = get_closest_match(antimicrobial, possible_antimicrobials)
-            if len(closest_matches_antimicrobials) == 1:
-                closest_match_antimicrobial = closest_matches_antimicrobials[0]
-            elif len(closest_matches_antimicrobials) > 1:
-                st.write("Did you mean:")
-                closest_match_antimicrobial = st.radio("Select an antimicrobial:", closest_matches_antimicrobials)
-                if not closest_match_antimicrobial:
-                    st.write("Please select an antimicrobial.")
-                    st.stop()
-            else:
-                st.write("No close match found for the entered antimicrobial.")
-                st.stop()
-        
-        # Get the breakpoint
-        breakpoint = get_breakpoint(closest_match_organism, closest_match_antimicrobial)
-        
-        if isinstance(breakpoint, list):
-            st.write(f"The susceptibility breakpoints for {closest_match_organism} are:")
-            for item in breakpoint:
-                st.write(f"{item[0]}: {item[1]}")
-        else:
-            st.write(f"The susceptibility breakpoint for {closest_match_organism} is: {breakpoint}")
+# Get possible organism names from the database
+possible_organisms = get_organism_names()
+
+# Find the closest matches to the user-entered organism
+closest_match_organism = None
+if organism:
+    closest_matches_organisms = get_closest_match(organism, possible_organisms)
+    if len(closest_matches_organisms) == 1:
+        closest_match_organism = closest_matches_organisms[0]
+    elif len(closest_matches_organisms) > 1:
+        st.write("Did you mean:")
+        closest_match_organism = st.radio("Select an organism:", closest_matches_organisms)
     else:
-        st.write("Please enter an organism.")
+        st.write("No close match found for the entered organism.")
+        st.stop()
+
+# If an organism was selected, proceed to get breakpoint information
+if closest_match_organism:
+    # If antimicrobial is provided, find the closest match
+    closest_match_antimicrobial = None
+    if antimicrobial:
+        possible_antimicrobials = get_antimicrobial_names()
+        closest_matches_antimicrobials = get_closest_match(antimicrobial, possible_antimicrobials)
+        if len(closest_matches_antimicrobials) == 1:
+            closest_match_antimicrobial = closest_matches_antimicrobials[0]
+        elif len(closest_matches_antimicrobials) > 1:
+            st.write("Did you mean:")
+            closest_match_antimicrobial = st.radio("Select an antimicrobial:", closest_matches_antimicrobials)
+        else:
+            st.write("No close match found for the entered antimicrobial.")
+            st.stop()
+
+    # Get the breakpoint
+    breakpoint = get_breakpoint(closest_match_organism, closest_match_antimicrobial)
+    
+    if isinstance(breakpoint, list):
+        st.write(f"The susceptibility breakpoints for {closest_match_organism} are:")
+        for item in breakpoint:
+            st.write(f"{item[0]}: {item[1]}")
+    else:
+        st.write(f"The susceptibility breakpoint for {closest_match_organism} is: {breakpoint}")
