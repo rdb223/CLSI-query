@@ -11,9 +11,9 @@ def get_breakpoint(organism, antimicrobial):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Convert inputs to lowercase and strip whitespace for case-insensitive search
+    # Convert inputs to lowercase and replace slashes with hyphens for standardized search
     organism = organism.strip().lower()
-    antimicrobial = antimicrobial.strip().lower()
+    antimicrobial = antimicrobial.strip().lower().replace('/', '-').replace(' ', '-')
     
     # Query to get the breakpoint (case-insensitive, trim spaces in the database too)
     query = "SELECT breakpoint FROM breakpoints WHERE LOWER(TRIM(organism)) = ? AND LOWER(TRIM(antimicrobial)) = ?"
