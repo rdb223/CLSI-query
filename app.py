@@ -38,6 +38,6 @@ antimicrobial = st.text_input("Enter Antimicrobial", placeholder="e.g. Cefepime"
 if st.button("Get Breakpoint"):
     if organism and antimicrobial:
         breakpoint = get_breakpoint(organism, antimicrobial)
-        st.markdown(f"<h3 style='color:darkred;'>The breakpoint for {organism} with {antimicrobial} is: {breakpoint}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color:white;'>The breakpoint for {organism} with {antimicrobial} is: {breakpoint}</h3>", unsafe_allow_html=True)
     else:
         st.write("Please enter both an organism and an antimicrobial.")
