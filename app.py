@@ -75,7 +75,7 @@ antimicrobial = st.text_input("Enter Antimicrobial (leave blank for all)", place
 possible_organisms = get_organism_names()
 possible_antimicrobials = get_antimicrobial_names()
 
-# Find the closest matches to the user-entered organism
+# Find the closest matches to the user-entered organism or antimicrobial
 closest_match_organism = None
 closest_match_antimicrobial = None
 
@@ -93,7 +93,6 @@ if organism:
         st.stop()
 
 elif antimicrobial:
-    # If organism is not provided but antimicrobial is, find matching organisms
     closest_matches_antimicrobials = get_closest_match(antimicrobial, possible_antimicrobials)
     if len(closest_matches_antimicrobials) == 1:
         closest_match_antimicrobial = closest_matches_antimicrobials[0]
