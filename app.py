@@ -11,8 +11,12 @@ def get_breakpoint(organism, antimicrobial):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Query to get the breakpoint
-    query = "SELECT breakpoint FROM breakpoints WHERE organism = ? AND antimicrobial = ?"
+    # Convert inputs to lowercase and strip whitespace for case-insensitive search
+    organism = organism.strip().lower()
+    antimicrobial = antimicrobial.strip().lower()
+    
+    # Query to get the breakpoint (case-insensitive, trim spaces in the database too)
+    query = "SELECT breakpoint FROM breakpoints WHERE LOWER(TRIM(organism)) = ? AND LOWER(TRIM(antimicrobial)) = ?"
     cursor.execute(query, (organism, antimicrobial))
     result = cursor.fetchone()
     
@@ -37,4 +41,3 @@ if st.button("Get Breakpoint"):
         st.markdown(f"<h3 style='color:white;'>The breakpoint for {organism} with {antimicrobial} is: {breakpoint}</h3>", unsafe_allow_html=True)
     else:
         st.write("Please enter both an organism and an antimicrobial.")
-
