@@ -88,10 +88,6 @@ if organism:
         for match in closest_matches_organisms:
             if st.button(match, key=f'organism_button_{match}'):
                 closest_match_organism = match
-    else:
-        st.write("No close match found for the entered organism.")
-        st.stop()
-
 elif antimicrobial:
     closest_matches_antimicrobials = get_closest_match(antimicrobial, possible_antimicrobials)
     if len(closest_matches_antimicrobials) == 1:
@@ -119,9 +115,6 @@ elif antimicrobial:
                 else:
                     st.write("No organisms found for the entered antimicrobial.")
                     st.stop()
-    else:
-        st.write("No close match found for the entered antimicrobial.")
-        st.stop()
 
 # If an organism was selected, proceed to get breakpoint information
 if closest_match_organism:
@@ -135,9 +128,6 @@ if closest_match_organism:
             for match in closest_matches_antimicrobials:
                 if st.button(match, key=f'antimicrobial_button_{match}'):
                     closest_match_antimicrobial = match
-        else:
-            st.write("No close match found for the entered antimicrobial.")
-            st.stop()
 
     # Get the breakpoint
     breakpoint = get_breakpoint(closest_match_organism, closest_match_antimicrobial)
