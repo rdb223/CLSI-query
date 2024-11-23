@@ -110,11 +110,11 @@ if st.button("Get Breakpoint"):
         # Get the breakpoint
         breakpoint = get_breakpoint(closest_match_organism, closest_match_antimicrobial)
         
-        st.write(f"The susceptibility breakpoint for {closest_match_organism} is:")
         if isinstance(breakpoint, list):
+            st.write(f"The susceptibility breakpoints for {closest_match_organism} are:")
             for item in breakpoint:
                 st.write(f"{item[0]}: {item[1]}")
         else:
-            st.write(breakpoint)
+            st.write(f"The susceptibility breakpoint for {closest_match_organism} is: {breakpoint}")
     else:
         st.write("Please enter an organism.")
