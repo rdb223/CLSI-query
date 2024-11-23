@@ -85,36 +85,34 @@ if organism:
         closest_match_organism = closest_matches_organisms[0]
     elif len(closest_matches_organisms) > 1:
         st.write("Did you mean:")
-        for match in closest_matches_organisms:
-            if st.button(match, key=f'organism_button_{match}'):
-                closest_match_organism = match
+        selected_organism = st.radio("Select an organism:", closest_matches_organisms, key='organism_radio')
+        closest_match_organism = selected_organism
+
 elif antimicrobial:
     closest_matches_antimicrobials = get_closest_match(antimicrobial, possible_antimicrobials)
     if len(closest_matches_antimicrobials) == 1:
         closest_match_antimicrobial = closest_matches_antimicrobials[0]
     elif len(closest_matches_antimicrobials) > 1:
         st.write("Did you mean:")
-        for match in closest_matches_antimicrobials:
-            if st.button(match, key=f'antimicrobial_button_{match}'):
-                closest_match_antimicrobial = match
-                # Get all organisms that have this antimicrobial
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                query = "SELECT DISTINCT organism FROM breakpoints WHERE LOWER(antimicrobial) = ?"
-                cursor.execute(query, (closest_match_antimicrobial.lower(),))
-                closest_matches_organisms = [row[0] for row in cursor.fetchall()]
-                conn.close()
-                if len(closest_matches_organisms) > 1:
-                    st.write("Did you mean one of these organisms:")
-                    for match in closest_matches_organisms:
-                        if st.button(match, key=f'organism_button_{match}'):
-                            closest_match_organism = match
-                            break
-                elif len(closest_matches_organisms) == 1:
-                    closest_match_organism = closest_matches_organisms[0]
-                else:
-                    st.write("No organisms found for the entered antimicrobial.")
-                    st.stop()
+        selected_antimicrobial = st.radio("Select an antimicrobial:", closest_matches_antimicrobials, key='antimicrobial_radio')
+        closest_match_antimicrobial = selected_antimicrobial
+        
+        # Get all organisms that have this antimicrobial
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        query = "SELECT DISTINCT organism FROM breakpoints WHERE LOWER(antimicrobial) = ?"
+        cursor.execute(query, (closest_match_antimicrobial.lower(),))
+        closest_matches_organisms = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        if len(closest_matches_organisms) > 1:
+            st.write("Did you mean one of these organisms:")
+            selected_organism = st.radio("Select an organism:", closest_matches_organisms, key='organism_radio_from_antimicrobial')
+            closest_match_organism = selected_organism
+        elif len(closest_matches_organisms) == 1:
+            closest_match_organism = closest_matches_organisms[0]
+        else:
+            st.write("No organisms found for the entered antimicrobial.")
+            st.stop()
 
 # If an organism was selected, proceed to get breakpoint information
 if closest_match_organism:
@@ -125,9 +123,8 @@ if closest_match_organism:
             closest_match_antimicrobial = closest_matches_antimicrobials[0]
         elif len(closest_matches_antimicrobials) > 1:
             st.write("Did you mean:")
-            for match in closest_matches_antimicrobials:
-                if st.button(match, key=f'antimicrobial_button_{match}'):
-                    closest_match_antimicrobial = match
+            selected_antimicrobial = st.radio("Select an antimicrobial:", closest_matches_antimicrobials, key='antimicrobial_radio_after_organism')
+            closest_match_antimicrobial = selected_antimicrobial
 
     # Get the breakpoint
     breakpoint = get_breakpoint(closest_match_organism, closest_match_antimicrobial)
