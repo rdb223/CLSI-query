@@ -85,6 +85,8 @@ if st.button("Get Breakpoint"):
         elif len(closest_matches_organisms) > 1:
             st.write("Did you mean:")
             closest_match_organism = st.radio("Select an organism:", closest_matches_organisms)
+            if not closest_match_organism:
+                st.stop()
         else:
             st.write("No close match found for the entered organism.")
             st.stop()
@@ -99,6 +101,8 @@ if st.button("Get Breakpoint"):
             elif len(closest_matches_antimicrobials) > 1:
                 st.write("Did you mean:")
                 closest_match_antimicrobial = st.radio("Select an antimicrobial:", closest_matches_antimicrobials)
+                if not closest_match_antimicrobial:
+                    st.stop()
             else:
                 st.write("No close match found for the entered antimicrobial.")
                 st.stop()
