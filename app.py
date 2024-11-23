@@ -42,7 +42,7 @@ def get_breakpoint(organism, antimicrobial):
         result = cursor.fetchall()
         conn.close()
         if result:
-            return '<br>'.join([f"<span style='color:red;'>{row[0]}: {row[1]}</span>" for row in result])
+            return '\n'.join([f"{row[0]}: {row[1]}" for row in result])
         else:
             return 'No data found for the given organism.'
     
@@ -76,6 +76,7 @@ if st.button("Get Breakpoint"):
         else:
             breakpoint = "No close match found for the entered organism."
         
-        st.write(f"The susceptibility breakpoint for {antimicrobial} for {organism} is: {breakpoint}")
+        st.write(f"The susceptibility breakpoint for {closest_match} is:")
+        st.write(breakpoint)
     else:
         st.write("Please enter an organism.")
