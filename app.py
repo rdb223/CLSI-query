@@ -30,8 +30,8 @@ def get_antimicrobial_names():
 # Function to get the closest matching organism or antimicrobial
 def get_closest_match(input_value, possible_values):
     # Use fuzzywuzzy to find the closest match
-    match, score = process.extractOne(input_value, possible_values)
-    return match if score > 70 else None  # Threshold of 70 to consider it a close match
+    matches = process.extract(input_value, possible_values, limit=5)
+    return [match[0] for match in matches if match[1] > 70]  # Threshold of 70 to consider it a close match
 
 # Function to get breakpoint from the database
 def get_breakpoint(organism, antimicrobial):
@@ -77,11 +77,20 @@ if st.button("Get Breakpoint"):
         # Get possible organism names from the database
         possible_organisms = get_organism_names()
         
-        # Find the closest match to the user-entered organism
-        closest_match_organism = get_closest_match(organism, possible_organisms)
+        # Find the closest matches to the user-entered organism
+        closest_matches_organisms = get_closest_match(organism, possible_organisms)
         
-        if closest_match_organism:
+        if len(closest_matches_organisms) == 1:
+            closest_match_organism = closest_matches_organisms[0]
             st.write(f"Did you mean: {closest_match_organism}?")
+        elif len(closest_matches_organisms) > 1:
+            st.write("Did you mean:")
+            for match in closest_matches_organisms:
+                if st.button(match):
+                    closest_match_organism = match
+                    break
+            else:
+                st.stop()
         else:
             st.write("No close match found for the entered organism.")
             st.stop()
@@ -90,9 +99,18 @@ if st.button("Get Breakpoint"):
         closest_match_antimicrobial = None
         if antimicrobial:
             possible_antimicrobials = get_antimicrobial_names()
-            closest_match_antimicrobial = get_closest_match(antimicrobial, possible_antimicrobials)
-            if closest_match_antimicrobial:
+            closest_matches_antimicrobials = get_closest_match(antimicrobial, possible_antimicrobials)
+            if len(closest_matches_antimicrobials) == 1:
+                closest_match_antimicrobial = closest_matches_antimicrobials[0]
                 st.write(f"Did you mean: {closest_match_antimicrobial}?")
+            elif len(closest_matches_antimicrobials) > 1:
+                st.write("Did you mean:")
+                for match in closest_matches_antimicrobials:
+                    if st.button(match):
+                        closest_match_antimicrobial = match
+                        break
+                else:
+                    st.stop()
             else:
                 st.write("No close match found for the entered antimicrobial.")
                 st.stop()
