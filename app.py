@@ -82,7 +82,6 @@ if organism:
         closest_match_organism = closest_matches_organisms[0]
     elif len(closest_matches_organisms) > 1:
         st.write("Did you mean:")
-        closest_match_organism = 
         st.write("Did you mean:")
         for match in closest_matches_organisms:
             if st.button(match, key=f'organism_button_{match}'):
@@ -102,7 +101,6 @@ if closest_match_organism:
             closest_match_antimicrobial = closest_matches_antimicrobials[0]
         elif len(closest_matches_antimicrobials) > 1:
             st.write("Did you mean:")
-            closest_match_antimicrobial = 
             st.write("Did you mean:")
             for match in closest_matches_antimicrobials:
                 if st.button(match, key=f'antimicrobial_button_{match}'):
