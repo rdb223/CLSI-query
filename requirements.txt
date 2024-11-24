@@ -1,3 +1,5 @@
 streamlit
-pandas
 fuzzywuzzy
+python-Levenshtein
+gunicorn
+sqlite3
