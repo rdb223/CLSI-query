@@ -10,10 +10,14 @@
         async function loadBreakpoints() {
             try {
                 const response = await fetch('breakpoints.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
                 breakpoints = await response.json();
                 console.log("Breakpoints data loaded successfully:", breakpoints);
             } catch (error) {
                 console.error("Error loading JSON data:", error);
+                document.getElementById("result").innerHTML = "Error loading breakpoint data. Please try again later.";
             }
         }
 
@@ -26,70 +30,49 @@
         }
 
         // Handle form submission
-        async function getBreakpoint() {
+        function getBreakpoint() {
             const organismInput = document.getElementById("organism").value.trim();
             const antimicrobialInput = document.getElementById("antimicrobial").value.trim();
 
-            let selectedOrganism = null;
-            let selectedAntimicrobial = null;
+            if (!breakpoints || breakpoints.length === 0) {
+                document.getElementById("result").innerHTML = "Breakpoint data not loaded. Please wait or try reloading the page.";
+                return;
+            }
 
-            // Fuzzy match organisms
+            let filteredBreakpoints = breakpoints;
+
+            // Filter by organism if input is provided
             if (organismInput) {
                 const organismMatches = getClosestMatches(organismInput, breakpoints, ['organism']);
                 if (organismMatches.length) {
-                    selectedOrganism = organismMatches[0].organism;
-                    console.log("Selected Organism:", selectedOrganism);
+                    filteredBreakpoints = organismMatches;
                 } else {
-                    console.log("No match found for organism input:", organismInput);
+                    document.getElementById("result").innerHTML = `No match found for organism: ${organismInput}`;
+                    return;
                 }
             }
 
-            // Fuzzy match antimicrobials
+            // Further filter by antimicrobial if input is provided
             if (antimicrobialInput) {
-                const antimicrobialMatches = getClosestMatches(antimicrobialInput, breakpoints, ['antimicrobial']);
+                const antimicrobialMatches = getClosestMatches(antimicrobialInput, filteredBreakpoints, ['antimicrobial']);
                 if (antimicrobialMatches.length) {
-                    selectedAntimicrobial = antimicrobialMatches[0].antimicrobial;
-                    console.log("Selected Antimicrobial:", selectedAntimicrobial);
+                    filteredBreakpoints = antimicrobialMatches;
                 } else {
-                    console.log("No match found for antimicrobial input:", antimicrobialInput);
+                    document.getElementById("result").innerHTML = `No match found for antimicrobial: ${antimicrobialInput}`;
+                    return;
                 }
             }
 
-            // Find breakpoints based on selected organism and antimicrobial
-            let result = "No data found for the given input.";
-
-            if (selectedOrganism) {
-                const filteredBreakpoints = breakpoints.filter(bp => bp.organism.toLowerCase() === selectedOrganism.toLowerCase());
-                
-                if (selectedAntimicrobial) {
-                    const specificResult = filteredBreakpoints.find(bp => bp.antimicrobial.toLowerCase() === selectedAntimicrobial.toLowerCase());
-                    if (specificResult) {
-                        result = `The breakpoint for ${selectedOrganism} with ${selectedAntimicrobial} is: ${specificResult.breakpoint}`;
-                    } else {
-                        result = `No breakpoint found for ${selectedOrganism} with ${selectedAntimicrobial}.`;
-                    }
-                } else {
-                    result = `Available breakpoints for ${selectedOrganism}:<br>`;
-                    filteredBreakpoints.forEach(bp => {
-                        result += `${bp.antimicrobial}: ${bp.breakpoint}<br>`;
-                    });
-                }
-            } else if (selectedAntimicrobial) {
-                // If only antimicrobial is entered, display organisms related to that antimicrobial
-                const filteredBreakpoints = breakpoints.filter(bp => bp.antimicrobial.toLowerCase() === selectedAntimicrobial.toLowerCase());
-                
-                if (filteredBreakpoints.length) {
-                    result = `Available breakpoints for ${selectedAntimicrobial}:<br>`;
-                    filteredBreakpoints.forEach(bp => {
-                        result += `${bp.organism}: ${bp.breakpoint}<br>`;
-                    });
-                } else {
-                    result = `No data found for antimicrobial ${selectedAntimicrobial}.`;
-                }
+            // Display the results
+            if (filteredBreakpoints.length > 0) {
+                let result = "Available breakpoints:<br>";
+                filteredBreakpoints.forEach(bp => {
+                    result += `${bp.organism} - ${bp.antimicrobial}: ${bp.breakpoint}<br>`;
+                });
+                document.getElementById("result").innerHTML = result;
+            } else {
+                document.getElementById("result").innerHTML = "No data found for the given input.";
             }
-
-            console.log("Final result:", result);
-            document.getElementById("result").innerHTML = result;
         }
 
         window.onload = loadBreakpoints;
