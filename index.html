@@ -2,13 +2,55 @@
 <html>
 <head>
     <title>CLSI Breakpoint Finder with JSON</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+    </style>
     <script>
         let jsonData = []; // Global variable to store loaded JSON data
 
-        // Function to load JSON from an external file
+        // Function to escape special characters
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            };
+            return String(text).replace(/[&<>"']/g, (char) => map[char]);
+        }
+
+        // Function to load JSON from the same directory
         async function loadJSON() {
             try {
-                const response = await fetch('breakpoints.json'); // Ensure this file is accessible
+                const response = await fetch('breakpoints.json'); // JSON file in the same directory
                 if (!response.ok) throw new Error('Failed to load JSON data.');
                 jsonData = await response.json();
                 console.log("JSON data loaded successfully.", jsonData);
@@ -23,24 +65,34 @@
             const organismInput = document.getElementById("organism").value.trim().toLowerCase();
             const antimicrobialInput = document.getElementById("antimicrobial").value.trim().toLowerCase();
 
-            // Filter JSON data
             const results = jsonData.filter(entry =>
                 (!organismInput || entry.organism.toLowerCase().includes(organismInput)) &&
                 (!antimicrobialInput || entry.antimicrobial.toLowerCase().includes(antimicrobialInput))
             );
 
-            // Format results for display
             const formattedResults = results.length > 0
-                ? results.map(entry => `
-                    <b>Organism:</b> ${entry.organism}<br>
-                    <b>Antimicrobial:</b> ${entry.antimicrobial}<br>
-                    <b>Breakpoint:</b> ${entry.breakpoint}<br>
-                    <b>Urine Breakpoint:</b> ${entry.urine_breakpoint}<br>
-                    <b>Notes:</b> ${entry.notes}<br><hr>
-                `).join('')
+                ? `
+                    <table>
+                        <tr>
+                            <th>Organism</th>
+                            <th>Antimicrobial</th>
+                            <th>Breakpoint</th>
+                            <th>Urine Breakpoint</th>
+                            <th>Notes</th>
+                        </tr>
+                        ${results.map(entry => `
+                            <tr>
+                                <td>${escapeHtml(entry.organism || "N/A")}</td>
+                                <td>${escapeHtml(entry.antimicrobial || "N/A")}</td>
+                                <td>${escapeHtml(entry.breakpoint || "N/A")}</td>
+                                <td>${escapeHtml(entry.urine_breakpoint || "N/A")}</td>
+                                <td>${escapeHtml(entry.notes || "N/A")}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                `
                 : "No data found for the given input.";
 
-            // Display results in the result section
             document.getElementById("result").innerHTML = formattedResults;
         }
 
@@ -49,16 +101,18 @@
     </script>
 </head>
 <body>
-    <h1>CLSI Breakpoint Finder with JSON</h1>
-    <form onsubmit="event.preventDefault(); getBreakpoint();">
-        <label for="organism">Enter Organism:</label>
-        <input type="text" id="organism" name="organism" placeholder="e.g. E. coli"><br><br>
-        <label for="antimicrobial">Enter Antimicrobial (leave blank for all):</label>
-        <input type="text" id="antimicrobial" name="antimicrobial" placeholder="e.g. Cefepime"><br><br>
-        <input type="submit" value="Get Breakpoint">
-    </form>
+    <div class="container">
+        <h1>CLSI Breakpoint Finder with JSON</h1>
+        <form onsubmit="event.preventDefault(); getBreakpoint();">
+            <label for="organism">Enter Organism:</label>
+            <input type="text" id="organism" name="organism" placeholder="e.g. E. coli"><br><br>
+            <label for="antimicrobial">Enter Antimicrobial (leave blank for all):</label>
+            <input type="text" id="antimicrobial" name="antimicrobial" placeholder="e.g. Cefepime"><br><br>
+            <input type="submit" value="Get Breakpoint">
+        </form>
 
-    <h3>Result:</h3>
-    <p id="result"></p>
+        <h3>Result:</h3>
+        <div id="result"></div>
+    </div>
 </body>
 </html>
