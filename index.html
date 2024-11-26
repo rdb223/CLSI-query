@@ -8,13 +8,14 @@
 
         // Load the breakpoint data from JSON
         async function loadBreakpoints() {
+            // Assuming you have a file named breakpoints.json with all data
             const response = await fetch('breakpoints.json');
             breakpoints = await response.json();
         }
 
         // Function to get closest match using Fuse.js
         function getClosestMatches(input, options) {
-            const fuse = new Fuse(options, { threshold: 0.3 });
+            const fuse = new Fuse(options, { keys: ['organism', 'antimicrobial'], threshold: 0.3 });
             const results = fuse.search(input);
             return results.map(result => result.item);
         }
@@ -30,14 +31,14 @@
             }
 
             // Get closest matches for organisms
-            const organismMatches = getClosestMatches(organismInput, breakpoints.map(bp => bp.organism));
-            let selectedOrganism = organismMatches[0] || null;
+            const organismMatches = getClosestMatches(organismInput, breakpoints.map(bp => ({ organism: bp.organism })));
+            let selectedOrganism = organismMatches.length ? organismMatches[0].organism : null;
 
             // Get closest matches for antimicrobials
             let selectedAntimicrobial = null;
             if (antimicrobialInput) {
-                const antimicrobialMatches = getClosestMatches(antimicrobialInput, breakpoints.map(bp => bp.antimicrobial));
-                selectedAntimicrobial = antimicrobialMatches[0] || null;
+                const antimicrobialMatches = getClosestMatches(antimicrobialInput, breakpoints.map(bp => ({ antimicrobial: bp.antimicrobial })));
+                selectedAntimicrobial = antimicrobialMatches.length ? antimicrobialMatches[0].antimicrobial : null;
             }
 
             // Find the breakpoint
