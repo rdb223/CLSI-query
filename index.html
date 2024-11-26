@@ -11,6 +11,7 @@
             try {
                 const response = await fetch('breakpoints.json');
                 breakpoints = await response.json();
+                console.log("Breakpoints data loaded successfully:", breakpoints);
             } catch (error) {
                 console.error("Error loading JSON data:", error);
             }
@@ -20,6 +21,7 @@
         function getClosestMatches(input, options, keys) {
             const fuse = new Fuse(options, { keys: keys, threshold: 0.3 });
             const results = fuse.search(input);
+            console.log("Fuzzy search results for input:", input, results);
             return results.map(result => result.item);
         }
 
@@ -36,6 +38,9 @@
                 const organismMatches = getClosestMatches(organismInput, breakpoints, ['organism']);
                 if (organismMatches.length) {
                     selectedOrganism = organismMatches[0].organism;
+                    console.log("Selected Organism:", selectedOrganism);
+                } else {
+                    console.log("No match found for organism input:", organismInput);
                 }
             }
 
@@ -44,6 +49,9 @@
                 const antimicrobialMatches = getClosestMatches(antimicrobialInput, breakpoints, ['antimicrobial']);
                 if (antimicrobialMatches.length) {
                     selectedAntimicrobial = antimicrobialMatches[0].antimicrobial;
+                    console.log("Selected Antimicrobial:", selectedAntimicrobial);
+                } else {
+                    console.log("No match found for antimicrobial input:", antimicrobialInput);
                 }
             }
 
@@ -80,6 +88,7 @@
                 }
             }
 
+            console.log("Final result:", result);
             document.getElementById("result").innerHTML = result;
         }
 
