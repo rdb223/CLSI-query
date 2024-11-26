@@ -1,85 +1,70 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CLSI Breakpoint Finder</title>
+    <title>CLSI Breakpoint Finder with Pyodide</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.18.1/full/pyodide.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
     <script>
-        let breakpoints = [];
-
-        // Load the breakpoint data from JSON
-        async function loadBreakpoints() {
-            try {
-                const response = await fetch('breakpoints.json');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                breakpoints = await response.json();
-                console.log("Breakpoints data loaded successfully:", breakpoints);
-            } catch (error) {
-                console.error("Error loading JSON data:", error);
-                document.getElementById("result").innerHTML = "Error loading breakpoint data. Please try again later.";
-            }
+        async function loadPyodideAndPackages() {
+            window.pyodide = await loadPyodide();
+            await pyodide.loadPackage(['micropip', 'sqlite3']);
+            console.log("Pyodide loaded successfully.");
         }
 
-        // Function to get closest match using Fuse.js
-        function getClosestMatches(input, options, keys) {
-            const fuse = new Fuse(options, { keys: keys, threshold: 0.3 });
-            const results = fuse.search(input);
-            console.log("Fuzzy search results for input:", input, results);
-            return results.map(result => result.item);
-        }
+        window.onload = async () => {
+            await loadPyodideAndPackages();
+        };
 
         // Handle form submission
-        function getBreakpoint() {
+        async function getBreakpoint() {
             const organismInput = document.getElementById("organism").value.trim();
             const antimicrobialInput = document.getElementById("antimicrobial").value.trim();
 
-            if (!breakpoints || breakpoints.length === 0) {
-                document.getElementById("result").innerHTML = "Breakpoint data not loaded. Please wait or try reloading the page.";
-                return;
-            }
+            // Python script to query database
+            const pythonCode = `
+import sqlite3
 
-            let filteredBreakpoints = breakpoints;
+# Connect to the SQLite database (assuming it is stored locally)
+connection = sqlite3.connect('breakpoints.db')
+cursor = connection.cursor()
 
-            // Filter by organism if input is provided
-            if (organismInput) {
-                const organismMatches = getClosestMatches(organismInput, breakpoints, ['organism']);
-                if (organismMatches.length) {
-                    filteredBreakpoints = organismMatches;
-                } else {
-                    document.getElementById("result").innerHTML = `No match found for organism: ${organismInput}`;
-                    return;
-                }
-            }
+# Define the query
+query = "SELECT * FROM breakpoints WHERE organism LIKE ? AND antimicrobial LIKE ?"
 
-            // Further filter by antimicrobial if input is provided
-            if (antimicrobialInput) {
-                const antimicrobialMatches = getClosestMatches(antimicrobialInput, filteredBreakpoints, ['antimicrobial']);
-                if (antimicrobialMatches.length) {
-                    filteredBreakpoints = antimicrobialMatches;
-                } else {
-                    document.getElementById("result").innerHTML = `No match found for antimicrobial: ${antimicrobialInput}`;
-                    return;
-                }
-            }
+# Parameters for the query
+parameters = (
+    f"%{organismInput}%" if organismInput else "%",
+    f"%{antimicrobialInput}%" if antimicrobialInput else "%"
+)
 
-            // Display the results
-            if (filteredBreakpoints.length > 0) {
-                let result = "Available breakpoints:<br>";
-                filteredBreakpoints.forEach(bp => {
-                    result += `${bp.organism} - ${bp.antimicrobial}: ${bp.breakpoint}<br>`;
-                });
-                document.getElementById("result").innerHTML = result;
-            } else {
-                document.getElementById("result").innerHTML = "No data found for the given input.";
+# Execute the query
+cursor.execute(query, parameters)
+results = cursor.fetchall()
+
+# Close connection
+connection.close()
+
+# Format the results
+formatted_results = ""
+for row in results:
+    formatted_results += f"{row[0]} - {row[1]}: {row[2]}<br>"
+
+formatted_results
+`;
+
+            try {
+                // Run the Python code using Pyodide
+                let result = await pyodide.runPythonAsync(pythonCode);
+                document.getElementById("result").innerHTML = result || "No data found for the given input.";
+            } catch (error) {
+                console.error("Error executing Python code:", error);
+                document.getElementById("result").innerHTML = "An error occurred. Please try again.";
             }
         }
-
-        window.onload = loadBreakpoints;
     </script>
 </head>
 <body>
-    <h1>CLSI Breakpoint Finder</h1>
+    <h1>CLSI Breakpoint Finder with Pyodide</h1>
     <form onsubmit="event.preventDefault(); getBreakpoint();">
         <label for="organism">Enter Organism:</label>
         <input type="text" id="organism" name="organism" placeholder="e.g. E. coli"><br><br>
