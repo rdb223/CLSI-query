@@ -1,7 +1,7 @@
 [
     {
         "antimicrobial": "ampicillin",
-        "breakpoint": "</=","8",
+        "breakpoint": "</=,8"
         "id": 1,
         "notes": "",
         "organism": "enterobacterales",
