@@ -1,70 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CLSI Breakpoint Finder with Pyodide</title>
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.18.1/full/pyodide.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
+    <title>CLSI Breakpoint Finder with JSON</title>
     <script>
-        async function loadPyodideAndPackages() {
-            window.pyodide = await loadPyodide();
-            await pyodide.loadPackage(['micropip', 'sqlite3']);
-            console.log("Pyodide loaded successfully.");
-        }
+        let jsonData = []; // Global variable to store loaded JSON data
 
-        window.onload = async () => {
-            await loadPyodideAndPackages();
-        };
-
-        // Handle form submission
-        async function getBreakpoint() {
-            const organismInput = document.getElementById("organism").value.trim();
-            const antimicrobialInput = document.getElementById("antimicrobial").value.trim();
-
-            // Python script to query database
-            const pythonCode = `
-import sqlite3
-
-# Connect to the SQLite database (assuming it is stored locally)
-connection = sqlite3.connect('breakpoints.db')
-cursor = connection.cursor()
-
-# Define the query
-query = "SELECT * FROM breakpoints WHERE organism LIKE ? AND antimicrobial LIKE ?"
-
-# Parameters for the query
-parameters = (
-    f"%{organismInput}%" if organismInput else "%",
-    f"%{antimicrobialInput}%" if antimicrobialInput else "%"
-)
-
-# Execute the query
-cursor.execute(query, parameters)
-results = cursor.fetchall()
-
-# Close connection
-connection.close()
-
-# Format the results
-formatted_results = ""
-for row in results:
-    formatted_results += f"{row[0]} - {row[1]}: {row[2]}<br>"
-
-formatted_results
-`;
-
+        // Function to load JSON from an external file
+        async function loadJSON() {
             try {
-                // Run the Python code using Pyodide
-                let result = await pyodide.runPythonAsync(pythonCode);
-                document.getElementById("result").innerHTML = result || "No data found for the given input.";
+                const response = await fetch('breakpoints.json'); // Ensure this file is accessible
+                if (!response.ok) throw new Error('Failed to load JSON data.');
+                jsonData = await response.json();
+                console.log("JSON data loaded successfully.", jsonData);
             } catch (error) {
-                console.error("Error executing Python code:", error);
-                document.getElementById("result").innerHTML = "An error occurred. Please try again.";
+                console.error("Error loading JSON:", error);
+                document.getElementById("result").innerHTML = "Error loading data. Please try again later.";
             }
         }
+
+        // Function to handle form submission and filter JSON data
+        function getBreakpoint() {
+            const organismInput = document.getElementById("organism").value.trim().toLowerCase();
+            const antimicrobialInput = document.getElementById("antimicrobial").value.trim().toLowerCase();
+
+            // Filter JSON data
+            const results = jsonData.filter(entry =>
+                (!organismInput || entry.organism.toLowerCase().includes(organismInput)) &&
+                (!antimicrobialInput || entry.antimicrobial.toLowerCase().includes(antimicrobialInput))
+            );
+
+            // Format results for display
+            const formattedResults = results.length > 0
+                ? results.map(entry => `
+                    <b>Organism:</b> ${entry.organism}<br>
+                    <b>Antimicrobial:</b> ${entry.antimicrobial}<br>
+                    <b>Breakpoint:</b> ${entry.breakpoint}<br>
+                    <b>Urine Breakpoint:</b> ${entry.urine_breakpoint}<br>
+                    <b>Notes:</b> ${entry.notes}<br><hr>
+                `).join('')
+                : "No data found for the given input.";
+
+            // Display results in the result section
+            document.getElementById("result").innerHTML = formattedResults;
+        }
+
+        // Load JSON data when the page loads
+        window.onload = loadJSON;
     </script>
 </head>
 <body>
-    <h1>CLSI Breakpoint Finder with Pyodide</h1>
+    <h1>CLSI Breakpoint Finder with JSON</h1>
     <form onsubmit="event.preventDefault(); getBreakpoint();">
         <label for="organism">Enter Organism:</label>
         <input type="text" id="organism" name="organism" placeholder="e.g. E. coli"><br><br>
