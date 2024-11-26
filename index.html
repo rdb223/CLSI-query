@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CLSI Breakpoint Finder</title>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
+    <script>
+        let breakpoints = [];
+
+        // Load the breakpoint data from JSON
+        async function loadBreakpoints() {
+            const response = await fetch('breakpoints.json');
+            breakpoints = await response.json();
+        }
+
+        // Function to get closest match using Fuse.js
+        function getClosestMatches(input, options) {
+            const fuse = new Fuse(options, { threshold: 0.3 });
+            const results = fuse.search(input);
+            return results.map(result => result.item);
+        }
+
+        // Handle form submission
+        async function getBreakpoint() {
+            const organismInput = document.getElementById("organism").value.trim();
+            const antimicrobialInput = document.getElementById("antimicrobial").value.trim();
+
+            if (!organismInput) {
+                alert("Please enter an organism.");
+                return;
+            }
+
+            // Get closest matches for organisms
+            const organismMatches = getClosestMatches(organismInput, breakpoints.map(bp => bp.organism));
+            let selectedOrganism = organismMatches[0] || null;
+
+            // Get closest matches for antimicrobials
+            let selectedAntimicrobial = null;
+            if (antimicrobialInput) {
+                const antimicrobialMatches = getClosestMatches(antimicrobialInput, breakpoints.map(bp => bp.antimicrobial));
+                selectedAntimicrobial = antimicrobialMatches[0] || null;
+            }
+
+            // Find the breakpoint
+            let result = "No data found for the given organism.";
+            if (selectedOrganism) {
+                const filteredBreakpoints = breakpoints.filter(bp => bp.organism.toLowerCase() === selectedOrganism.toLowerCase());
+                if (selectedAntimicrobial) {
+                    const specificResult = filteredBreakpoints.find(bp => bp.antimicrobial.toLowerCase() === selectedAntimicrobial.toLowerCase());
+                    if (specificResult) {
+                        result = `The breakpoint for ${selectedOrganism} with ${selectedAntimicrobial} is: ${specificResult.breakpoint}`;
+                    }
+                } else {
+                    result = `Available breakpoints for ${selectedOrganism}:`;
+                    filteredBreakpoints.forEach(bp => {
+                        result += `<br>${bp.antimicrobial}: ${bp.breakpoint}`;
+                    });
+                }
+            }
+
+            document.getElementById("result").innerHTML = result;
+        }
+
+        window.onload = loadBreakpoints;
+    </script>
+</head>
+<body>
+    <h1>CLSI Breakpoint Finder</h1>
+    <form onsubmit="event.preventDefault(); getBreakpoint();">
+        <label for="organism">Enter Organism:</label>
+        <input type="text" id="organism" name="organism" placeholder="e.g. E. coli"><br><br>
+        <label for="antimicrobial">Enter Antimicrobial (leave blank for all):</label>
+        <input type="text" id="antimicrobial" name="antimicrobial" placeholder="e.g. Cefepime"><br><br>
+        <input type="submit" value="Get Breakpoint">
+    </form>
+
+    <h3>Result:</h3>
+    <p id="result"></p>
+</body>
+</html>
