@@ -1,68 +1,54 @@
-import sqlite3
+from supabase import create_client, Client
 import streamlit as st
 from fuzzywuzzy import process  # Import for fuzzy matching
 
-# Database connection function
-def get_db_connection():
-    conn = sqlite3.connect('CLSI_breakpoints.db')  # Make sure this matches your database name
-    return conn
+# Supabase configuration
+SUPABASE_URL = "https://your-project.supabase.co"
+SUPABASE_KEY = "your-public-anon-key"
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Function to get possible organism names from the database
+# Function to get possible organism names from Supabase
 def get_organism_names():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    query = "SELECT DISTINCT organism FROM breakpoints"
-    cursor.execute(query)
-    organisms = [row[0] for row in cursor.fetchall()]
-    conn.close()
-    return organisms
+    response = supabase.table("breakpoints").select("organism").execute()
+    if response.error:
+        print(f"Error fetching organisms: {response.error}")
+        return []
+    return list({item["organism"] for item in response.data})
 
-# Function to get possible antimicrobial names from the database
+# Function to get possible antimicrobial names from Supabase
 def get_antimicrobial_names():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    query = "SELECT DISTINCT antimicrobial FROM breakpoints"
-    cursor.execute(query)
-    antimicrobials = [row[0] for row in cursor.fetchall()]
-    conn.close()
-    return antimicrobials
+    response = supabase.table("breakpoints").select("antimicrobial").execute()
+    if response.error:
+        print(f"Error fetching antimicrobials: {response.error}")
+        return []
+    return list({item["antimicrobial"] for item in response.data})
 
 # Function to get the closest matching organism or antimicrobial
 def get_closest_match(input_value, possible_values):
-    # Use fuzzywuzzy to find the closest match
     matches = process.extract(input_value, possible_values, limit=5)
-    return [match[0] for match in matches if match[1] > 70]  # Threshold of 70 to consider it a close match
+    return [match[0] for match in matches if match[1] > 70]
 
-# Function to get breakpoint from the database
+# Function to get breakpoint from Supabase
 def get_breakpoint(organism, antimicrobial):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Convert inputs to lowercase and replace slashes/spaces with hyphens for standardized search
-    organism = organism.lower().strip()
-    antimicrobial = antimicrobial.lower().strip().replace('/', '-').replace(' ', '-') if antimicrobial else None
+    query = supabase.table("breakpoints").select("breakpoint")
 
-    # Query to get the breakpoint (case-insensitive)
+    if organism:
+        query = query.eq("organism", organism.lower())
     if antimicrobial:
-        query = "SELECT breakpoint FROM breakpoints WHERE LOWER(organism) = ? AND LOWER(antimicrobial) = ?"
-        cursor.execute(query, (organism, antimicrobial))
-    else:
-        query = "SELECT antimicrobial, breakpoint FROM breakpoints WHERE LOWER(organism) = ?"
-        cursor.execute(query, (organism,))
-        result = cursor.fetchall()
-        conn.close()
-        if result:
-            return result
+        query = query.eq("antimicrobial", antimicrobial.lower())
+
+    response = query.execute()
+    if response.error:
+        print(f"Error fetching breakpoint: {response.error}")
+        return "Error fetching breakpoint."
+
+    if len(response.data) > 0:
+        if antimicrobial:
+            return response.data[0]["breakpoint"]
         else:
-            return 'No data found for the given organism.'
-    
-    result = cursor.fetchone()
-    conn.close()
-    
-    if result:
-        return result[0]
+            return [(item["antimicrobial"], item["breakpoint"]) for item in response.data]
     else:
-        return 'No data found for the given organism and antimicrobial.'
+        return "No data found for the given organism and antimicrobial."
 
 # Streamlit App
 st.title("CLSI Breakpoint Finder")
@@ -71,7 +57,7 @@ st.title("CLSI Breakpoint Finder")
 organism = st.text_input("Enter Organism", placeholder="e.g. E. coli")
 antimicrobial = st.text_input("Enter Antimicrobial (leave blank for all)", placeholder="e.g. Cefepime")
 
-# Get possible organism names from the database
+# Get possible organism names from Supabase
 possible_organisms = get_organism_names()
 possible_antimicrobials = get_antimicrobial_names()
 
@@ -88,7 +74,7 @@ if organism:
         selected_organism = st.radio("Select an organism:", closest_matches_organisms, key='organism_radio')
         closest_match_organism = selected_organism
 
-elif antimicrobial:
+if antimicrobial:
     closest_matches_antimicrobials = get_closest_match(antimicrobial, possible_antimicrobials)
     if len(closest_matches_antimicrobials) == 1:
         closest_match_antimicrobial = closest_matches_antimicrobials[0]
@@ -96,23 +82,6 @@ elif antimicrobial:
         st.write("Did you mean:")
         selected_antimicrobial = st.radio("Select an antimicrobial:", closest_matches_antimicrobials, key='antimicrobial_radio')
         closest_match_antimicrobial = selected_antimicrobial
-        
-        # Get all organisms that have this antimicrobial
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        query = "SELECT DISTINCT organism FROM breakpoints WHERE LOWER(antimicrobial) = ?"
-        cursor.execute(query, (closest_match_antimicrobial.lower(),))
-        closest_matches_organisms = [row[0] for row in cursor.fetchall()]
-        conn.close()
-        if len(closest_matches_organisms) > 1:
-            st.write("Did you mean one of these organisms:")
-            selected_organism = st.radio("Select an organism:", closest_matches_organisms, key='organism_radio_from_antimicrobial')
-            closest_match_organism = selected_organism
-        elif len(closest_matches_organisms) == 1:
-            closest_match_organism = closest_matches_organisms[0]
-        else:
-            st.write("No organisms found for the entered antimicrobial.")
-            st.stop()
 
 # If an organism was selected, proceed to get breakpoint information
 if closest_match_organism:
@@ -128,7 +97,7 @@ if closest_match_organism:
 
     # Get the breakpoint
     breakpoint = get_breakpoint(closest_match_organism, closest_match_antimicrobial)
-    
+
     if isinstance(breakpoint, list):
         st.write(f"The susceptibility breakpoints for {closest_match_organism} are:")
         for item in breakpoint:
