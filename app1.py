@@ -3,8 +3,8 @@ import streamlit as st
 from fuzzywuzzy import process  # Import for fuzzy matching
 
 # Supabase configuration
-SUPABASE_URL = "https://your-project.supabase.co"
-SUPABASE_KEY = "your-public-anon-key"
+SUPABASE_URL = "https://djnlovqptcfnuiaeodkl.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbmxvdnFwdGNmbnVpYWVvZGtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY0NDU3NzAsImV4cCI6MjA1MjAyMTc3MH0.FzQgwArEXA7u_kbdeIPMzvfs79ncoVkL9Zho-pBXtEI"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Function to get possible organism names from Supabase
